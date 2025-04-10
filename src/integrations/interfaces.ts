@@ -9,8 +9,9 @@ export interface IStoreReferenceData {
 export interface ICallToAction {
   actionTypeId: number;
   storeReferenceId: number;
+  referencePromotionId: number;
   referenceId: number;
-  storeReferenceIds: number[];
+  storeReferences: string[];
   brandId: number;
   macroId: number;
 }
@@ -22,21 +23,22 @@ export interface IUtm {
   campaignContent: string;
   campaignTerm: string;
 }
-export interface ICallToActionLink {
-  fullUrl: string;
-  shortenUrl: string;
-}
-
-export interface IShortLinkPayload {
+export interface IShortLinkRequest {
   callToAction: Partial<ICallToAction>;
   utm: IUtm;
 }
 
-export interface IShortLinkPayloadAndKey {
+export interface IShortLinkResponse {
+  data: {
+    shortLink: string;
+    websiteURL: string;
+  };
+}
+
+export interface IShortLinkResponseAndKey {
   key: string;
-  value: IShortLinkPayload;
+  value: IShortLinkRequest;
   storeId: number;
-  // campaignService: CampaignProvider;
 }
 export interface IConnectlyEntry {
   client: string;

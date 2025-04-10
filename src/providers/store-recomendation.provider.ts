@@ -1,6 +1,6 @@
 import { CHANNEL } from '../enums.ts';
-import { IStoreSuggestion } from '../repositories/interfaces.ts';
-import { IStoreRecomendation } from '../scripts/campaign-engine.ts';
+import { IStoreSuggestion, OFFER_TYPE } from '../repositories/interfaces.ts';
+import { IStoreRecommendation } from './interfaces.ts';
 import {
   TypeCampaignEntry,
   TypeSku,
@@ -16,7 +16,7 @@ import { getCampaignSegmentName } from '../parameters/campaigns.ts';
 import * as CLEVERATAP from '../mocks/clevertap-campaigns.mock.ts';
 import { v4 as uuid } from 'uuid';
 
-export class StoreRecomendationProvider {
+export class StoreRecommendationProvider {
   private readonly baseDate: number;
   private readonly uuid: string;
 
@@ -27,7 +27,7 @@ export class StoreRecomendationProvider {
 
   public generateMap(
     filteredData: IStoreSuggestion[],
-  ): Map<number, IStoreRecomendation> {
+  ): Map<number, IStoreRecommendation> {
     return filteredData.reduce((acc, row) => {
       const params: TypeStoreParams = {
         locationId: row.locationId,
@@ -50,19 +50,19 @@ export class StoreRecomendationProvider {
   }
 
   public assignCampaignAndUtm(
-    storeMap: Map<number, IStoreRecomendation>,
+    storeMap: Map<number, IStoreRecommendation>,
     day: number,
-  ): Map<number, IStoreRecomendation> {
+  ): Map<number, IStoreRecommendation> {
     const newStoreMap = new Map();
-    for (const [storeId, storeRecomendation] of storeMap.entries()) {
-      const { params, skus } = storeRecomendation;
+    for (const [storeId, storeRecommendation] of storeMap.entries()) {
+      const { params, skus } = storeRecommendation;
       const campaign = this.getCampaignRange(params, day, skus.length);
 
       if (!campaign) continue;
 
       const utm = this.getUtm(params, day);
       newStoreMap.set(storeId, {
-        ...storeRecomendation,
+        ...storeRecommendation,
         campaign,
         utm,
       });
@@ -77,12 +77,25 @@ export class StoreRecomendationProvider {
     storeStatus: row.storeStatus,
   });
 
-  private getSku = (row: IStoreSuggestion): TypeSku => ({
-    storeReferenceId: row.storeReferenceId,
-    reference: row.reference,
-    discountFormatted: row.discountFormatted,
-    image: StoreReferenceMap.get(row.storeReferenceId)?.regular ?? '',
-  });
+  private getSku = (row: IStoreSuggestion): TypeSku => {
+    const storeReferenceId =
+      row.recommendationType === OFFER_TYPE.storeReference
+        ? row.recommendationId
+        : null;
+    const referencePromotionId =
+      row.recommendationType === OFFER_TYPE.referencePromotion
+        ? row.recommendationId
+        : null;
+    const image = StoreReferenceMap.get(storeReferenceId)?.regular ?? '';
+    return {
+      skuType: row.recommendationType,
+      storeReferenceId,
+      referencePromotionId,
+      reference: row.reference,
+      discountFormatted: row.discountFormatted,
+      image,
+    };
+  };
 
   private getCampaignRange = (
     { communicationChannel /* , locationId */ }: TypeStoreParams,

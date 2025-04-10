@@ -1,5 +1,5 @@
 import { BigQuery } from '@google-cloud/bigquery';
-import { IStoreSuggestion } from './interfaces.ts';
+import { IStoreSuggestion, OFFER_TYPE } from './interfaces.ts';
 import { IFrequencyParameter } from '../mocks/interfaces.ts';
 import { CHANNEL, LOCATION, STORE_STATUS } from '../enums.ts';
 import { LoggingProvider } from '../providers/logging.provider.ts';
@@ -33,9 +33,10 @@ export class BigQueryRepository {
       MG.city,
       MG.cityId,
       MG.locationId,
-      MG.storeReferenceId,
+      IF(MOD(MG.storeReferenceId, 10) = 0, '${OFFER_TYPE.referencePromotion}', '${OFFER_TYPE.storeReference}') as recommendationType,
+      IF(MOD(MG.storeReferenceId, 10) = 0, MG.storeReferenceId + 1000000, MG.storeReferenceId) as recommendationId,
       MG.name,
-      MG.reference,
+      IF(MOD(MG.storeReferenceId, 10) = 0, CONCAT('PROMO: ', MG.reference), MG.reference) as reference,
       MG.discountFormatted,
       MG.phone,
       MG.ranking,
@@ -90,10 +91,10 @@ export class BigQueryRepository {
                 AND IFNULL(LSR.toDays, QRY.daysSinceLastOrderDelivered)
         AND QRY.locationId = LSR.locationId
         AND QRY.storeStatus = LSR.storeStatus
-        AND QRY.storeReferenceId IS NOT NULL
+        AND QRY.recommendationId IS NOT NULL
       ORDER BY QRY.storeId, QRY.ranking
-      -- LIMIT 750
-      -- OFFSET 7250
+      LIMIT 750
+      OFFSET 7250
     `;
 
     this.logger.log({
